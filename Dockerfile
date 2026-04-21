@@ -11,29 +11,33 @@ WORKDIR /app
 COPY company/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only the company source code
+# Copy only the company source code into /app
 COPY company/ ./
 
-# Copy all agent *.md files into the image so they can be read at runtime.
-# We preserve the same directory structure relative to /app/..
-COPY academic/      ../academic/
-COPY design/        ../design/
-COPY engineering/   ../engineering/
-COPY finance/       ../finance/
-COPY game-development/ ../game-development/
-COPY marketing/     ../marketing/
-COPY paid-media/    ../paid-media/
-COPY product/       ../product/
-COPY project-management/ ../project-management/
-COPY sales/         ../sales/
-COPY spatial-computing/  ../spatial-computing/
-COPY specialized/   ../specialized/
-COPY strategy/      ../strategy/
-COPY support/       ../support/
-COPY testing/       ../testing/
+# Copy agent category directories into /agent_repo/ so agents.py can find them.
+# Using individual COPY instructions keeps them outside /app and matches
+# the relative path expected by config.py (REPO_ROOT = parent of company/).
+COPY academic/           /agent_repo/academic/
+COPY design/             /agent_repo/design/
+COPY engineering/        /agent_repo/engineering/
+COPY finance/            /agent_repo/finance/
+COPY game-development/   /agent_repo/game-development/
+COPY marketing/          /agent_repo/marketing/
+COPY paid-media/         /agent_repo/paid-media/
+COPY product/            /agent_repo/product/
+COPY project-management/ /agent_repo/project-management/
+COPY sales/              /agent_repo/sales/
+COPY spatial-computing/  /agent_repo/spatial-computing/
+COPY specialized/        /agent_repo/specialized/
+COPY strategy/           /agent_repo/strategy/
+COPY support/            /agent_repo/support/
+COPY testing/            /agent_repo/testing/
+
+# Tell config.py where the repo root is when running in the container.
+# REPO_ROOT is used by agents.py to locate the *.md files.
+ENV REPO_ROOT=/agent_repo
 
 # Railway injects $PORT at runtime; default to 8000 for local runs
 EXPOSE 8000
 
-# uvicorn with 2 workers (adjust for Railway plan limits)
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]

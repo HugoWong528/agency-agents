@@ -231,7 +231,8 @@ async def chat(
             full = []
             async for chunk in stream_chat_completion(messages, model=model):
                 full.append(chunk)
-                yield f"{chunk}\n"
+                # Ensure proper SSE format: each line prefixed with "data: "
+                yield f"data: {chunk}\n\n"
             # Persist assistant reply
             _append_and_trim(history, "user", req.message)
             _append_and_trim(history, "assistant", "".join(full))

@@ -7,8 +7,11 @@ from pathlib import Path
 # Paths
 # ---------------------------------------------------------------------------
 
-# Root of the agency-agents repository (one level above company/)
-REPO_ROOT: Path = Path(__file__).parent.parent
+# Root of the agency-agents repository.
+# When running in Docker the REPO_ROOT env var points to /agent_repo;
+# locally it defaults to one level above company/ (the repository root).
+_env_root = os.getenv("REPO_ROOT", "")
+REPO_ROOT: Path = Path(_env_root) if _env_root else Path(__file__).parent.parent
 
 # Agent category directories to scan
 AGENT_DIRS: list[str] = [

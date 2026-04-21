@@ -153,9 +153,11 @@ async def chat_completion(
                 )
                 _mark_key_failed(idx)
                 tried.add(idx)
-                last_err = httpx.HTTPStatusError(
-                    f"HTTP {resp.status_code}", request=resp.request, response=resp
-                )
+                # Build error using raise_for_status so the signature is correct
+                try:
+                    resp.raise_for_status()
+                except httpx.HTTPStatusError as status_err:
+                    last_err = status_err
                 continue
 
             resp.raise_for_status()

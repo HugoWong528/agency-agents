@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
-    role: str  # "system" | "user" | "assistant"
+    role: Literal["system", "user", "assistant"]  # enforce valid roles
     content: str
 
 
