@@ -1,24 +1,40 @@
 # AI Auto Company Setup & Deployment Guide
 
+> **✅ Complete working code is in [`company/`](company/).**  
+> This document is the high-level overview. For step-by-step setup see
+> [`company/README.md`](company/README.md).
+
 This guide explains how to run this repository as an **AI auto company** (multi-role, multi-agent operations) with:
 
-- All roles available from this repository
-- Pollinations API as the LLM provider
-- **Free-model-only** policy
+- All roles available from this repository (loaded automatically)
+- Pollinations API as the LLM provider (free models only)
 - Multiple API keys with automatic failover
 - Local deployment and Railway deployment options
+- Built-in GitHub integration
 
 ---
 
-## 1) Important Reality Check
+## Where the Code Lives
 
-This repository is mainly:
+| Path | What it is |
+|------|-----------|
+| `company/` | Complete Python/FastAPI orchestrator service |
+| `company/README.md` | Full setup and usage guide |
+| `company/.env.example` | Environment variable template |
+| `Dockerfile` | Container image (repo root) |
+| `railway.toml` | Railway deployment config (repo root) |
 
-- Agent definitions (`*.md`)
-- Integration converters/installers (`scripts/convert.sh`, `scripts/install.sh`)
+---
 
-It is **not** a complete hosted SaaS backend by itself.  
-To run a company-style autonomous system, you need an agent runtime/orchestrator (your app) that uses these agent files as system prompts.
+## Quick Links
+
+- **Local setup (2 minutes):** see [company/README.md](company/README.md)
+- **Railway deployment:** see [company/README.md#railway-deployment](company/README.md#railway-deployment-free-tier)
+- **API reference:** `http://localhost:8000/docs` after starting the server
+
+---
+
+## Architecture Summary
 
 ---
 
