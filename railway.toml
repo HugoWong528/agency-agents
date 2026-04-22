@@ -9,6 +9,8 @@ dockerfilePath = "Dockerfile"
 # Railway sets $PORT automatically — uvicorn reads it via the CMD in Dockerfile
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+healthcheckPath = "/health"
+healthcheckTimeout = 30
 
 [[services]]
 name = "ai-auto-company"
