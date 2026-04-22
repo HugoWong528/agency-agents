@@ -18,6 +18,7 @@
 | `models.py` | Pydantic request/response schemas |
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Environment variable template |
+| `AUTOMATION_SETUP.md` | Free-first setup for automation and required keys |
 | `../Dockerfile` | Container image (repo root) |
 | `../railway.toml` | Railway deployment config (repo root) |
 
