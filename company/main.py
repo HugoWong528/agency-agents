@@ -7,6 +7,8 @@ GET  /                     Full dashboard UI
 GET  /health               Health check
 GET  /agents               List all available agents
 GET  /models               List allowed free models
+GET  /context              Get platform settings (project context, auto-GitHub, self-improve)
+POST /context              Update platform settings
 POST /chat                 Single-agent chat (optional session continuity)
 POST /task                 Synchronous multi-agent task workflow
 POST /jobs                 Submit background job (async, returns job ID immediately)
@@ -47,6 +49,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 import agents as agent_registry
+import context_store
 import github_tools
 import job_queue
 import task_scheduler
@@ -65,6 +68,7 @@ from models import (
     AudioRequest,
     ChatRequest,
     ChatResponse,
+    ContextSettings,
     GitHubRequest,
     GitHubResponse,
     HealthResponse,
@@ -220,6 +224,36 @@ async def list_agents(_: None = Depends(verify_auth)) -> AgentListResponse:
 @app.get("/models", tags=["System"])
 async def list_models() -> dict[str, Any]:
     return {"models": MODEL_ALLOWLIST, "default": DEFAULT_MODEL}
+
+
+# ---------------------------------------------------------------------------
+# GET /context  POST /context  — platform settings
+# ---------------------------------------------------------------------------
+
+
+@app.get("/context", response_model=ContextSettings, tags=["System"])
+async def get_context(_: None = Depends(verify_auth)) -> ContextSettings:
+    """Return current platform settings (project context, auto-GitHub, self-improve)."""
+    return ContextSettings(**context_store.as_dict())
+
+
+@app.post("/context", response_model=ContextSettings, tags=["System"])
+async def update_context(
+    req: ContextSettings, _: None = Depends(verify_auth)
+) -> ContextSettings:
+    """Update platform settings. All fields are optional — omitted fields keep their current value."""
+    updated = context_store.update(
+        project_context=req.project_context,
+        auto_github_repo=req.auto_github_repo,
+        auto_github_branch=req.auto_github_branch,
+        self_improve=req.self_improve,
+    )
+    return ContextSettings(
+        project_context=updated.project_context,
+        auto_github_repo=updated.auto_github_repo,
+        auto_github_branch=updated.auto_github_branch,
+        self_improve=updated.self_improve,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -678,6 +712,9 @@ hr{border:none;border-top:1px solid #2a2a4a;margin:20px 0}
   <div class="nav-item" onclick="showSection('schedules')" id="nav-schedules">
     <span class="icon">🕐</span> Schedules
   </div>
+  <div class="nav-item" onclick="showSection('settings')" id="nav-settings">
+    <span class="icon">🔧</span> Settings
+  </div>
   <div class="nav-item" onclick="showSection('agents')" id="nav-agents">
     <span class="icon">🧠</span> Agents
   </div>
@@ -849,6 +886,64 @@ hr{border:none;border-top:1px solid #2a2a4a;margin:20px 0}
     <div id="agent-count" style="font-size:.8rem;color:#666;margin-bottom:12px"></div>
     <div class="agent-grid" id="agent-grid"><div class="empty">Loading agents…</div></div>
   </div>
+
+  <!-- Settings -->
+  <div class="section" id="section-settings">
+    <h2>🔧 Platform Settings</h2>
+    <p style="font-size:.85rem;color:#888;margin-bottom:20px">
+      These settings apply to <strong>every</strong> job and are saved server-side for the current session.
+    </p>
+
+    <div class="card">
+      <h3>📋 Project Context</h3>
+      <p style="font-size:.8rem;color:#888;margin-bottom:10px">
+        Describe your project, tech stack, goals, and any conventions. This text is automatically
+        prepended to every agent prompt so the AI always knows what it's working on.
+      </p>
+      <div class="form-group">
+        <label>Project context (markdown supported)</label>
+        <textarea id="ctx-project" rows="6" placeholder="e.g. We are building a SaaS product called Acme using FastAPI + React + PostgreSQL. Always use TypeScript for frontend code. Our GitHub repo is acme/my-project."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🤖 Self-Improvement</h3>
+      <p style="font-size:.8rem;color:#888;margin-bottom:12px">
+        When enabled, each completed job automatically runs a <strong>critic review pass</strong> followed
+        by a <strong>specialist refine pass</strong> to improve the output quality before marking the job done.
+      </p>
+      <div style="display:flex;align-items:center;gap:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#e0e0e0;font-size:.9rem">
+          <input type="checkbox" id="ctx-self-improve" style="width:18px;height:18px;cursor:pointer;accent-color:#6366f1"/>
+          Enable automatic self-improvement on every job
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🐙 Auto-Upload to GitHub</h3>
+      <p style="font-size:.8rem;color:#888;margin-bottom:12px">
+        When a GitHub Token is configured server-side and a repo is set here, every completed job
+        will <strong>automatically create a GitHub Issue</strong> in that repo with the full result.
+      </p>
+      <div class="form-row">
+        <div>
+          <label>Target repository (owner/repo)</label>
+          <input id="ctx-github-repo" placeholder="e.g. acme/my-project"/>
+        </div>
+        <div>
+          <label>Branch (for future file commits)</label>
+          <input id="ctx-github-branch" placeholder="main"/>
+        </div>
+      </div>
+      <p style="font-size:.75rem;color:#555;margin-top:6px">
+        💡 Requires <code>GITHUB_TOKEN</code> to be set as an environment variable on the server.
+      </p>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveContext()" style="margin-top:4px">💾 Save Settings</button>
+    <div id="ctx-msg" style="margin-top:10px"></div>
+  </div>
 </div>
 
 <!-- Job Detail Modal -->
@@ -908,6 +1003,7 @@ function showSection(name){
   if(name==='jobs')loadJobs();
   if(name==='agents')loadAgents();
   if(name==='schedules')loadSchedules();
+  if(name==='settings')loadContext();
 }
 
 // ---------------------------------------------------------------------------
@@ -1179,6 +1275,34 @@ function filterAgents(){
     a.category.toLowerCase().includes(q)
   ));
 }
+
+// ---------------------------------------------------------------------------
+// Settings (platform context)
+// ---------------------------------------------------------------------------
+async function loadContext(){
+  try{
+    const c=await apiFetch('/context');
+    document.getElementById('ctx-project').value=c.project_context||'';
+    document.getElementById('ctx-self-improve').checked=c.self_improve!==false;
+    document.getElementById('ctx-github-repo').value=c.auto_github_repo||'';
+    document.getElementById('ctx-github-branch').value=c.auto_github_branch||'main';
+  }catch(e){console.warn('loadContext error:',e);}
+}
+async function saveContext(){
+  const msg=document.getElementById('ctx-msg');
+  msg.innerHTML='<span style="color:#60a5fa">Saving…</span>';
+  try{
+    await apiFetch('/context',{method:'POST',body:JSON.stringify({
+      project_context:document.getElementById('ctx-project').value,
+      self_improve:document.getElementById('ctx-self-improve').checked,
+      auto_github_repo:document.getElementById('ctx-github-repo').value.trim(),
+      auto_github_branch:document.getElementById('ctx-github-branch').value.trim()||'main',
+    })});
+    msg.innerHTML='<span class="success-msg">✅ Settings saved! All future jobs will use these settings.</span>';
+  }catch(e){msg.innerHTML=`<span class="error-msg">❌ ${escHtml(e.message)}</span>`;}
+}
+// Load context on startup (for background use)
+(async()=>{try{await loadContext();}catch(_){} })();
 
 // ---------------------------------------------------------------------------
 // Utils

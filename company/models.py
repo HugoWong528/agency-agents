@@ -209,3 +209,37 @@ class ScheduleInfo(BaseModel):
     cron: str | None
     interval_minutes: int | None
     next_run: str | None
+
+
+# ---------------------------------------------------------------------------
+# Platform context / settings
+# ---------------------------------------------------------------------------
+
+
+class ContextSettings(BaseModel):
+    project_context: str = Field(
+        "",
+        description=(
+            "Free-text description of your project, goals, and conventions. "
+            "Injected at the top of every agent prompt automatically."
+        ),
+    )
+    auto_github_repo: str = Field(
+        "",
+        description=(
+            "owner/repo to push job results to (e.g. 'acme/my-project'). "
+            "When set and GITHUB_TOKEN is configured, every completed job "
+            "automatically creates a GitHub issue with the result."
+        ),
+    )
+    auto_github_branch: str = Field(
+        "main",
+        description="Branch to use when committing files via auto-upload.",
+    )
+    self_improve: bool = Field(
+        True,
+        description=(
+            "When True, each job runs a critic+refine pass after the main "
+            "agents finish, automatically improving the final answer."
+        ),
+    )
