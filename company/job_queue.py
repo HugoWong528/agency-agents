@@ -215,9 +215,14 @@ async def _run_job(job: Job) -> None:
         # -----------------------------------------------------------------
         # Auto-upload result to GitHub as an issue
         # -----------------------------------------------------------------
+        _MAX_ISSUE_TITLE_LEN = 72
         if ctx.auto_github_repo and GITHUB_TOKEN:
             try:
-                title = f"[AI Job] {job.task[:72]}{'…' if len(job.task) > 72 else ''}"
+                truncated = len(job.task) > _MAX_ISSUE_TITLE_LEN
+                title = (
+                    f"[AI Job] {job.task[:_MAX_ISSUE_TITLE_LEN]}"
+                    f"{'…' if truncated else ''}"
+                )
                 body = (
                     f"**Task:** {job.task}\n\n"
                     f"**Result:**\n\n{summary}\n\n"

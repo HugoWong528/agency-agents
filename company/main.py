@@ -242,18 +242,12 @@ async def update_context(
     req: ContextSettings, _: None = Depends(verify_auth)
 ) -> ContextSettings:
     """Update platform settings. All fields are optional — omitted fields keep their current value."""
-    updated = context_store.update(
+    return ContextSettings(**context_store.update(
         project_context=req.project_context,
         auto_github_repo=req.auto_github_repo,
         auto_github_branch=req.auto_github_branch,
         self_improve=req.self_improve,
-    )
-    return ContextSettings(
-        project_context=updated.project_context,
-        auto_github_repo=updated.auto_github_repo,
-        auto_github_branch=updated.auto_github_branch,
-        self_improve=updated.self_improve,
-    )
+    ).__dict__)
 
 
 # ---------------------------------------------------------------------------
