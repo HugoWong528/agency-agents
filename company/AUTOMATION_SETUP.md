@@ -39,7 +39,7 @@ Short answer: **it reports missing setup, but you provide values manually**.
 
 ## 3) How to provide what it needs
 
-## A. Environment variables (required base setup)
+### A. Environment variables (required base setup)
 
 1. Copy template:
 
@@ -64,7 +64,7 @@ python main.py
 
 ---
 
-## B. Runtime context (optional automation settings)
+### B. Runtime context (optional automation settings)
 
 Use **Settings** in the web UI or `POST /context` to set:
 
@@ -89,7 +89,7 @@ curl -X POST http://localhost:8000/context \
 
 ---
 
-## C. Trigger work
+### C. Trigger work
 
 - One-time background job: `POST /jobs`
 - Recurring automation: `POST /schedules`
