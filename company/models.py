@@ -147,3 +147,65 @@ class HealthResponse(BaseModel):
     agents_loaded: int
     keys_configured: int
     default_model: str
+
+
+# ---------------------------------------------------------------------------
+# Job queue
+# ---------------------------------------------------------------------------
+
+
+class JobSubmitRequest(BaseModel):
+    task: str = Field(..., description="Task description to run in the background.")
+    agents: list[str] | None = Field(
+        None,
+        description="Optional ordered list of agent slugs. Auto-selected when omitted.",
+    )
+    model: str | None = Field(None, description="Pollinations model. Defaults to server default.")
+
+
+class JobInfo(BaseModel):
+    id: str
+    task: str
+    agents: list[str]
+    model: str | None
+    status: str
+    created_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
+    summary: str | None = None
+    error: str | None = None
+
+
+class JobDetailResponse(JobInfo):
+    steps: list[TaskStep] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Schedules
+# ---------------------------------------------------------------------------
+
+
+class ScheduleCreateRequest(BaseModel):
+    name: str = Field(..., description="Human-readable name for this schedule.")
+    task: str = Field(..., description="Task description to auto-submit on schedule.")
+    agents: list[str] | None = Field(None, description="Optional list of agent slugs.")
+    model: str | None = None
+    cron: str | None = Field(
+        None,
+        description="5-field cron expression: 'minute hour day month weekday'",
+    )
+    interval_minutes: int | None = Field(
+        None,
+        description="Run every N minutes. Alternative to cron.",
+    )
+
+
+class ScheduleInfo(BaseModel):
+    id: str
+    name: str
+    task: str
+    agents: list[str]
+    model: str | None
+    cron: str | None
+    interval_minutes: int | None
+    next_run: str | None
