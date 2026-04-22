@@ -107,8 +107,8 @@ def remove_schedule(schedule_id: str) -> bool:
         return False
     try:
         get_scheduler().remove_job(schedule_id)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Could not remove APScheduler job %s: %s", schedule_id, exc)
     del _schedules[schedule_id]
     logger.info("Removed schedule %s.", schedule_id)
     return True

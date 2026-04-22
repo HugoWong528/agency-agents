@@ -119,6 +119,10 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
 
     # Cleanup
     worker_task.cancel()
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        pass
     task_scheduler.stop()
 
 
@@ -1010,6 +1014,13 @@ async function cancelJob(ev,id){
     loadJobs();
   }catch(e){alert('Cancel failed: '+e.message);}
 }
+async function cancelJobById(id){
+  try{
+    await apiFetch('/jobs/'+id,{method:'DELETE'});
+    closeModalDirect();
+    loadJobs();
+  }catch(e){alert('Cancel failed: '+e.message);}
+}
 
 // ---------------------------------------------------------------------------
 // Job Modal
@@ -1032,7 +1043,7 @@ async function openJobModal(id){
       html+='<h3 style="margin-bottom:10px;color:#a5b4fc">Agent Steps</h3>';
       html+=j.steps.map(s=>`<div class="step-block"><div class="agent-tag">🤖 ${escHtml(s.agent)} · ${escHtml(s.model)}</div><div class="content">${escHtml(s.content)}</div></div>`).join('');
     }
-    if(j.status==='pending')html+=`<button class="btn btn-danger" onclick="cancelJob({stopPropagation:()=>{}},'${j.id}');closeModalDirect()">✕ Cancel Job</button>`;
+    if(j.status==='pending')html+=`<button class="btn btn-danger" onclick="cancelJobById('${j.id}')">✕ Cancel Job</button>`;
     document.getElementById('modal-body').innerHTML=html;
   }catch(e){document.getElementById('modal-body').innerHTML=`<div style="color:#f87171">${escHtml(e.message)}</div>`;}
 }
